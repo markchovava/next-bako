@@ -1,4 +1,4 @@
-import { _checkAuthAction } from "../../(auth)/_data/actions/AuthActions";
+import { _checkAuthAction, _checkUserIsAdminAction } from "../../(auth)/_data/actions/AuthActions";
 import BreadCrumbDefault from "../../_components/bread-crumbs/BreadCrumbDefault"
 import { _roleViewAction } from "../_data/actions/RoleActions";
 import RoleEditModal from "./_components/RoleEditPage";
@@ -16,7 +16,8 @@ interface PropInterface {
 
 export default async function page({ params }: PropInterface) {
     const { id } = await params;
-    await Promise.all([_checkAuthAction()]);
+    await _checkAuthAction();
+    await _checkUserIsAdminAction(1);
     const [ roleData ] = await Promise.all([  _roleViewAction(id) ])
     
     const CrumbsData = [

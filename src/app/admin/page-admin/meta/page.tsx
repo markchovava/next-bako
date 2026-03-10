@@ -1,4 +1,4 @@
-import { _checkAuthAction } from "../../(auth)/_data/actions/AuthActions";
+import { _checkAuthAction, _checkUserIsAdminAction } from "../../(auth)/_data/actions/AuthActions";
 import BreadCrumbDefault from "../../_components/bread-crumbs/BreadCrumbDefault"
 import MetaAddModal from "./_components/MetaAddModal"
 import MetaPage from "./_components/MetaPage"
@@ -14,7 +14,8 @@ const CrumbsData = [
  
 
 export default async function page() {
-    await Promise.all([_checkAuthAction()]); 
+    await _checkAuthAction();
+    await _checkUserIsAdminAction(1);
     const [ pageMetaData ] = await Promise.all([ _pageMetaListAction() ]);
   
 

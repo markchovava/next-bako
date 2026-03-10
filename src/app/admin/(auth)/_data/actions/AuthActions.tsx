@@ -42,17 +42,22 @@ export async function _checkAuthAction() {
     return 
 }
 
-export async function _checkUserIsAdminAction() {
-    const cookieStore = await cookies();
-    const current = await cookieStore.get('BAKO_CURRENT_USER_COOKIE');
-    if(current?.value) {
-      const user = JSON.parse(current?.value)
-      if(Number(user.isAdmin) !== 1) {
-        redirect('/')
-      }
-      // console.log('currentUser:: ', user)
+export async function _checkUserIsAdminAction(num: number = 1) {
+  const cookieStore = await cookies();
+  const current = cookieStore.get('BAKO_CURRENT_USER_COOKIE');
+  if (!current?.value) {
+    redirect('/');
+    return;
+  }
+  try {
+    const user = JSON.parse(current.value);
+    if (Number(user.roleLevel) <= num) {
+      redirect('/');
+      return;
     }
-   
+  } catch (e) {
+    redirect('/');
+  }
 }
 
 export async function _logoutAction() {

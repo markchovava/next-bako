@@ -12,6 +12,7 @@ import { ButtonAdminSubmit } from '@/app/admin/_components/buttons/ButtonAdminSu
 import { toast } from 'react-toastify';
 import TextAreaInputDefault from '@/app/admin/_components/forms/textareas/TextAreaInputDefault';
 import { MessageStatusData } from '../../_data/sample/MessageData';
+import { _messageUpdateAction } from '../../_data/actions/MessageActions';
 
 
 
@@ -42,44 +43,58 @@ export default function MessageEditModal({ id }: PropInterface) {
         errors,
         toggleModal,
         isSubmitting,
-        setData, 
+        getData,
         setInputValue, 
         setToggleModal, 
         clearErrors,
         setIsSubmitting,
         validateForm,
     } = useMessageStore()
-
+    
     const handleToggleModal = () => {
         setToggleModal(!toggleModal)
     }
-
- 
-
-    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-        clearErrors();
-        e.preventDefault();
-        // Validate form using store
-        const validation = validateForm();
-        if (!validation.isValid) {
-            // Show the first error as toast
-            const firstError =  validation.errors.name || 
-                validation.errors.email || validation.errors.title
-            toast.warn(firstError);
-            return;
+    
+        async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+            clearErrors();
+            e.preventDefault();
+            // Validate form using store
+            const validation = validateForm();
+            if (!validation.isValid) {
+                // Show the first error as toast
+                const firstError =  validation.errors.title || 
+                    validation.errors.message
+                toast.warn(firstError);
+                return;
+            }
+            setIsSubmitting(true);
+            const formData = {
+                name: data.title,
+                status: data.status, 
+                email: data.email, 
+                message: data.message, 
+            } 
+            try {
+                const res = await _messageUpdateAction(id, formData);
+                const {status, message} = res;
+                switch(status){
+                    case 1:
+                        toast.success(message);
+                        await getData(id);
+                        clearErrors();
+                        setIsSubmitting(false);
+                        setToggleModal(false)
+                        return
+                    default:
+                        toast.success('Something went wrong, please try again.');
+                        setIsSubmitting(false);
+                        return
+                } 
+            } catch (error) {
+                toast.error('Failed to save data. Please try again.');
+                console.error('Form submission error:', error);
+            }
         }
-        setIsSubmitting(true);
-        const formData = {
-            name: data.name,
-            email: data.email,
-            title: data.title,
-            message: data.message,
-            status: data.status,
-           
-        } 
-        setIsSubmitting(false);
-        console.log('FORM DATA: ', formData)
-    }
 
    
     return (
@@ -103,20 +118,9 @@ export default function MessageEditModal({ id }: PropInterface) {
                                 <SpacerPrimary />
                                 <hr className="w-full border-b border-gray-100" />
                                 <SpacerPrimary />
-                                
-                                <TextInputDefault
-                                    label='Name:' 
-                                    name='name' 
-                                    type="text"
-                                    value={data.name} 
-                                    placeholder='Enter your Name...'
-                                    onChange={setInputValue} 
-                                    error={errors.name}
-                                />
-                                <SpacerPrimary />
                             
                                 <TextInputDefault
-                                    label='Title:' 
+                                    label='Title' 
                                     name='title' 
                                     type="text"
                                     value={data.title} 

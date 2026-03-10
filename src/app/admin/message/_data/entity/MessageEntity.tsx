@@ -1,24 +1,26 @@
+import { UserEntity, UserInterface } from "@/app/admin/user/_data/entity/UserEntity"
+
 export interface MessageInterface{
     id: string | number
-    name: string
+    userId: string | number
     email: string
     message: string
     title: string
     status: string,
-    userId: string | number
     createdAt: string
     updatedAt: string
+    user: UserInterface
 }
 
 
 export const MessageEntity: MessageInterface = {
     id: "",
-    name: "",
+    userId: "",
     email: "",
     title: "",
-    status: "",
-    userId: "",
     message: "",
+    status: "",
     createdAt: "",
-    updatedAt: ""
+    updatedAt: "",
+    user: UserEntity,
 };

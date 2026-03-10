@@ -6,22 +6,40 @@ import { useMessageStore } from '../../_store/useMessageStore'
 import HeadingDefault from '@/app/admin/_components/headings/HeadingDefault'
 import ButtonAdmin from '@/app/admin/_components/buttons/ButtonAdmin'
 import RecordDefault from '@/app/admin/_components/records/RecordDefault'
+import { MessageEntity } from '../../_data/entity/MessageEntity'
+import { useEffect } from 'react'
+import { valueWithFallback } from '@/_utils/StringManipulation'
+import { formatDate } from '@/_utils/formatDate'
+import LoaderPrimary from '@/app/admin/_components/loaders/LoaderPrimary'
+import StickerDefault from '@/app/admin/_components/stickers/StickerDefault'
 
 
 
 const title = "View Message"
 
-
 interface PropInterface{
   id: string | number
+  dbData: any
 }
 
-export default function MessageViewPage({id}: PropInterface) {
-  const { setToggleModal } = useMessageStore()
+export default function MessageViewPage({dbData}: PropInterface) {
+    const { 
+      setData, 
+      toggleModal, 
+      setToggleModal,
+    } = useMessageStore()
 
-  const handleToggleModal = () => {
-    setToggleModal(true)
-  }
+    useEffect(() => {
+        if(Number(dbData.status) == 1) {
+          setData(dbData.data) 
+        } else {
+          setData(MessageEntity)
+        }
+    }, [dbData.data, setData])
+
+    const handleToggleModal = () => {
+      setToggleModal(!toggleModal)
+    }
 
   return (
     <>
@@ -37,18 +55,40 @@ export default function MessageViewPage({id}: PropInterface) {
         css='py-2 px-6' />
     </section>
 
-    <section className='container__primary bg-white drop-shadow-lg rounded-lg p-6 space-y-4'>
-        <RecordDefault label='Name' value={`Data Display here.`} />
-        <RecordDefault label='Title' value={`Data Display here.`} />
-        <RecordDefault label='Email' value={`Data Display here.`} />
-        <RecordDefault label='Message' value={`Data Display here.`} />
-        <RecordDefault label='Status' value={`Data Display here.`} />
-        <RecordDefault label='Created' value={`Data Display here.`} />
-        <RecordDefault label='Author' value={`Data Display here.`} />
-        <SpacerPrimary />
-    </section>
-
+    <MainDataArea />
     <SpacerDefault />
     </>
+  )
+}
+
+
+
+function MainDataArea(){
+  const { 
+      preData, 
+      isLoading,
+    } = useMessageStore()
+  const updated = preData.updatedAt ? formatDate(preData.updatedAt) : 'Not Added yet.'
+
+  if(isLoading) {
+    return (
+      <LoaderPrimary />
+    )
+  }
+
+  console.log('PREDATA', preData)
+
+  return(
+     <section className='container__primary bg-white drop-shadow-lg rounded-lg p-6 space-y-4'>
+        <RecordDefault label='Title' value={valueWithFallback(preData.title)} />
+        <RecordDefault label='Email' value={valueWithFallback(preData.email)} />
+        <RecordDefault 
+            label='Status' 
+            value={<StickerDefault label={valueWithFallback(preData.status)} css='px-1.5 py-0.5' />}  
+        />
+        <RecordDefault label='Message' value={valueWithFallback(preData.message)} />
+        <RecordDefault label='Updated' value={updated} />
+        <SpacerPrimary />
+    </section>
   )
 }

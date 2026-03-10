@@ -1,4 +1,4 @@
-import { _checkAuthAction } from "../(auth)/_data/actions/AuthActions";
+import { _checkAuthAction, _checkUserIsAdminAction } from "../(auth)/_data/actions/AuthActions";
 import BreadCrumbDefault from "../_components/bread-crumbs/BreadCrumbDefault"
 import ClientAddModal from "./_components/ClientAddModal"
 import ClientPage from "./_components/ClientPage"
@@ -13,7 +13,8 @@ const CrumbsData = [
  
 
 export default async function page() {
-    await Promise.all([_checkAuthAction()]); 
+    await _checkAuthAction();
+    await _checkUserIsAdminAction(1);
     const [ clientData ] = await Promise.all([ _clientListAction() ]);
 
   return (

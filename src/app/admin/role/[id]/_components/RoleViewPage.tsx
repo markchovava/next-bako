@@ -29,10 +29,11 @@ export default function RoleViewPage({id, dbData}: PropInterface) {
     } = useRoleStore()
 
     useEffect(() => {
-      if(Number(dbData.status) == 1) {
-        setData(dbData.data) 
-      }
-      setData(RoleEntity)
+        if(Number(dbData.status) == 1) {
+            setData(dbData.data) 
+        } else {
+            setData(RoleEntity)
+        }
     }, [dbData.data, setData]) 
 
     const handleToggleModal = () => {
@@ -69,8 +70,6 @@ function MainDataArea(){
       isLoading,
     } = useRoleStore()
   const updatedAt = preData.updatedAt ? valueWithFallback(formatDate(preData.updatedAt)) : "Not Added Yet."
-
-
 
   if(isLoading) {
     return (

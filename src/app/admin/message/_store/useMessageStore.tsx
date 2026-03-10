@@ -1,20 +1,28 @@
 "use client"
 
 import { create } from "zustand";
-import { MessageEntity, MessageInterface } from "../_data/entity/MessageEntity"
+import { MetaEntity, MetaInterface, MetaLinksEntity, MetaLinksInterface, ResponseInterface } from "../../_data/entities/ResponseEntity";
+import { MessageEntity, MessageInterface } from "../_data/entity/MessageEntity";
+import { _messageListAction, _messagePaginateAction, _messageSearchAction, _messageViewAction } from "../_data/actions/MessageActions";
 
 
 
-interface PropInterface{
+interface PropsInterface{
     data: MessageInterface,
+    dataList: MessageInterface[],
+    meta: MetaInterface,
+    links: MetaLinksInterface,
     preData: MessageInterface,
     errors: MessageInterface,
+    search: string,
+    isSearching: boolean,
     message: string,
     isLoading: boolean,
     isSubmitting: boolean,
     toggleModal: boolean,
-    search: string,
-    isSearching: boolean,
+    setDataListAll: (i: MessageInterface[]) => void,
+    setIsLoading: (i: boolean) => void,
+    setDataList: (i: ResponseInterface) => void
     setSearch: (e: React.ChangeEvent<HTMLInputElement>) => void,
     setIsSearching: (i: boolean) => void,
     setToggleModal: (i: boolean) => void,
@@ -22,29 +30,67 @@ interface PropInterface{
         e: React.ChangeEvent<HTMLInputElement> | 
         React.ChangeEvent<HTMLTextAreaElement> |
         React.ChangeEvent<HTMLSelectElement>
-    ) => void
+    ) => void,
     setError: (name: string, value: string) => void,
-    setData: (data: MessageInterface) => void,
+    setValue: (name: string, value: string | number) => void,
+    setData: (i: MessageInterface) => void,
     resetData: () => void,
     setIsSubmitting: (i: boolean) => void,
-    setMessage: (str: string) => void,
-    clearErrors: () => void
+    setMessage: (i: string) => void,
+    clearErrors: () => void,
     validateField: (name: string, value: string) => string,
     validateForm: () => { isValid: boolean; errors: MessageInterface },
-    // getData: () => Promise<void>
+    getData: (i: number | string) => Promise<void>,
+    getDataList: () => Promise<void>,
+    getSearchDatalist: (search: string) => Promise<void>
+    getPaginatedDatalist: (url: string) => Promise<void>
 }
+ 
 
-
-export const useMessageStore = create<PropInterface>((set, get) => ({ 
+export const useMessageStore = create<PropsInterface>((set, get) => ({ 
     data: MessageEntity,
+    dataList: [],
+    meta: MetaEntity,
+    links: MetaLinksEntity,
     preData: MessageEntity,
     errors: MessageEntity,
-    message: "",
-    search: "",
+    search: '',
     isSearching: false,
-    isLoading: true,
+    message: '',
+    isLoading:true,
     isSubmitting: false,
     toggleModal: false,
+    setDataListAll: (i) => {
+        set({
+            dataList: i,
+            isLoading: false,
+        })
+    },
+    setValue: (name, value) => {
+        const currentData = get().data;
+        const currentErrors = get().errors;
+        set({ 
+            data: {...currentData, [name]: value},
+            // Clear error for this field if it exists
+            errors: currentErrors[name as keyof typeof currentErrors]
+                ? { ...currentErrors, [name]: "" }
+                : currentErrors
+        })
+    },
+    setIsLoading: (i) => {
+        set({
+            isLoading: i
+        })
+    },
+    setDataList: (i) => {
+        const {data, links, meta} = i
+        set({
+            dataList: data,
+            meta: meta,
+            links: links,
+            isLoading: false,
+        })
+    },
     setSearch: (e) => {
         const { value } = e.target;
         set({
@@ -59,11 +105,6 @@ export const useMessageStore = create<PropInterface>((set, get) => ({
     setToggleModal: (i) => {
         set({
             toggleModal: i
-        })
-    },
-    setIsSubmitting: (i) => {
-        set({
-            isSubmitting: i
         })
     },
     setInputValue: (e) => {
@@ -81,23 +122,28 @@ export const useMessageStore = create<PropInterface>((set, get) => ({
                 : currentErrors
         });
     },
-    setData: (i) => {
-        set({
-            data: i ? i : MessageEntity,
-            preData: i ? i : MessageEntity,
-            isLoading: false,
-        })
-    },
     setError: (name, value) => {
         const currentErrors = get().errors;
         set({
             errors: { ...currentErrors, [name]: value }
         })
     },
+    setData: (i) => {
+        console.log('SetData', i)
+        set({
+            data: i,
+            preData: i,
+            isLoading: false,
+        })
+    },
     resetData: () => {
         set({
             data: MessageEntity,
-            preData: MessageEntity,
+        })
+    },
+    setIsSubmitting: (i) => {
+        set({
+            isSubmitting: i,
         })
     },
     setMessage: (i) => {
@@ -107,20 +153,15 @@ export const useMessageStore = create<PropInterface>((set, get) => ({
     },
     clearErrors: () => {
         set({
-            errors: MessageEntity,
+            errors: MessageEntity
         })
     },
     validateField: (name, value) => {
         let error = ""
         switch(name){
-            case "name":
+            case "title":
                 if(!value.trim()){
-                    error = "Name is required.";
-                } 
-                break;
-            case "email":
-                if(!value.trim()){
-                    error = "Email is required.";
+                    error = "Title is required.";
                 } 
                 break;
             case "message":
@@ -137,31 +178,140 @@ export const useMessageStore = create<PropInterface>((set, get) => ({
         const { data } = get();
         let errors = { ...MessageEntity };
         let hasError = false;
-        // Validate NAME
-        const nameError = get().validateField("name", data.name);
-        if (nameError) {
-            errors.name = nameError;
+        // Validate TITLE
+        const titleError = get().validateField("title", data.title);
+        if (titleError) {
+            errors.title = titleError;
             hasError = true;
         }
-        // Validate EMAIL
-        const emailError = get().validateField("phone", data.email);
-        if (emailError) {
-            errors.email = emailError;
-            hasError = true;
-        }
-        // Validate EMAIL
+        // Validate MESSAGE
         const messageError = get().validateField("message", data.message);
         if (messageError) {
             errors.message = messageError;
             hasError = true;
         }
-        
         set({ errors });
         return {
             isValid: !hasError,
             errors
         };
     },
-
-
+    getData: async (i) => {
+        try {
+            const res = await _messageViewAction(i);
+            if (res && res.data ) {
+                set({
+                    data: res.data,
+                    preData: res.data,
+                    isLoading: false,
+                });
+            } else {
+                set({
+                    data: MessageEntity,
+                    preData: MessageEntity,
+                    isLoading: false,
+                });
+            }
+        } catch (error) {
+            console.error(`Error: ${error}`);
+            set({
+                data: MessageEntity,
+                preData: MessageEntity,
+                isLoading: false,
+            });
+        }
+    },
+    getDataList: async() => {
+        set({ isLoading: true });
+        try {
+            const res = await _messageListAction();
+            // Check if response has the expected structure
+            if (res && res.data && res.meta && res.links) {
+                set({
+                    dataList: res.data,
+                    meta: res.meta,
+                    links: res.links,
+                    isLoading: false,
+                });
+            } else {
+                // Fallback if structure is different
+                set({
+                    dataList: Array.isArray(res) ? res : res.data || [],
+                    meta: res.meta || MetaEntity,
+                    links: res.links || MetaLinksEntity,
+                    isLoading: false,
+                });
+            }
+        } catch (error) {
+            console.error(`Error: ${error}`);
+            set({
+                dataList: [],
+                meta: MetaEntity,
+                links: MetaLinksEntity,
+                isLoading: false,
+            });
+        }
+    },
+    getSearchDatalist: async (search) => {
+        set({ isSearching: true });
+        try {
+            const res = await _messageSearchAction(search);
+            // Check if response has the expected structure
+            if (res && res.data && res.meta && res.links) {
+                set({
+                    dataList: res.data,
+                    meta: res.meta,
+                    links: res.links,
+                    isSearching: false,
+                });
+            } else {
+                // Fallback if structure is different
+                set({
+                    dataList: Array.isArray(res) ? res : res.data || [],
+                    meta: res.meta || MetaEntity,
+                    links: res.links || MetaLinksEntity,
+                    isSearching: false,
+                });
+            }
+        } catch (error) {
+            console.error(`Error: ${error}`);
+            set({
+                dataList: [],
+                meta: MetaEntity,
+                links: MetaLinksEntity,
+                isSearching: false,
+            });
+        }
+    },
+    getPaginatedDatalist: async (url: string) => {
+        set({ isLoading: true });
+        try {
+            const res = await _messagePaginateAction(url);
+            // Check if response has the expected structure
+            if (res && res.data && res.meta && res.links) {
+                set({
+                    dataList: res.data,
+                    meta: res.meta,
+                    links: res.links,
+                    isLoading: false,
+                });
+            } else {
+                // Fallback if structure is different
+                set({
+                    dataList: Array.isArray(res) ? res : res.data || [],
+                    meta: res.meta || MetaEntity,
+                    links: res.links || MetaLinksEntity,
+                    isLoading: false,
+                });
+            }
+        } catch (error) {
+            console.error(`Error: ${error}`);
+            set({
+                dataList: [],
+                meta: MetaEntity,
+                links: MetaLinksEntity,
+                isLoading: false,
+            });
+        }
+    },
 }))

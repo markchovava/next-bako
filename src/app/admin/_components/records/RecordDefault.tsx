@@ -3,7 +3,7 @@
 
 interface PropInterface{
     label: string
-    value: string | number
+    value: React.ReactNode
 }
 
 

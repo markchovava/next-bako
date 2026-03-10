@@ -1,7 +1,7 @@
 import BreadCrumbDefault from "@/app/admin/_components/bread-crumbs/BreadCrumbDefault";
 import MetaViewPage from "./_components/MetaViewPage";
 import MetaEditModal from "./_components/MetaEditPage";
-import { _checkAuthAction } from "@/app/admin/(auth)/_data/actions/AuthActions";
+import { _checkAuthAction, _checkUserIsAdminAction } from "@/app/admin/(auth)/_data/actions/AuthActions";
 import { _pageMetaViewAction } from "../_data/actions/PageMetaActions";
 
 
@@ -14,9 +14,10 @@ interface PropInterface {
 
 
 export default async function page({ params }: PropInterface) {
-    const { id } = await params;
-    await Promise.all([ _checkAuthAction() ]);
-    const [ pageMetaData ] = await Promise.all([  _pageMetaViewAction(id) ])
+      const { id } = await params;
+      await _checkAuthAction();
+      await _checkUserIsAdminAction(1);
+      const [ pageMetaData ] = await Promise.all([  _pageMetaViewAction(id) ])
     
     const CrumbsData = [
         {id: 1, name: 'Admin', href: '/admin'},

@@ -1,4 +1,4 @@
-import { _checkAuthAction } from "../../(auth)/_data/actions/AuthActions";
+import { _checkAuthAction, _checkUserIsAdminAction } from "../../(auth)/_data/actions/AuthActions";
 import BreadCrumbDefault from "../../_components/bread-crumbs/BreadCrumbDefault"
 import { _serviceViewAction } from "../_data/actions/ServiceActions";
 import ServiceEditModal from "./_components/ServiceEditPage";
@@ -16,7 +16,8 @@ interface PropInterface {
 
 export default async function page({ params }: PropInterface) {
     const { id } = await params;
-    await Promise.all([ _checkAuthAction() ]);
+    await _checkAuthAction();
+    await _checkUserIsAdminAction(1);
     const [ serviceData ] = await Promise.all([  _serviceViewAction(id) ])
     
     const CrumbsData = [

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useEffect } from 'react'
 import { AnimatePresence, motion, Variants } from 'framer-motion';
 import { useMessageStore } from '../_store/useMessageStore';
 import { toast } from 'react-toastify';
@@ -9,12 +9,11 @@ import SpacerPrimary from '@/_components/spacers/SpacerPrimary';
 import HeadingSecondary from '../../_components/headings/HeadingSecondary';
 import TextInputDefault from '../../_components/forms/inputs/TextInputDefault';
 import { ButtonAdminSubmit } from '../../_components/buttons/ButtonAdminSubmit';
-import SelectAdminDefault from '../../_components/forms/selects/SelectAdminDefault';
-import { MessageStatusData } from '../_data/sample/MessageData';
 import TextAreaInputDefault from '../../_components/forms/textareas/TextAreaInputDefault';
+import { _messageStoreAction } from '../_data/actions/MessageActions';
 
 
-
+ 
 const title = "Add Message"
 
 
@@ -31,24 +30,27 @@ const variants: Variants = {
 
 
 export default function MessageAddModal() {
-    const { 
+    const {
         data, 
-        errors,
-        toggleModal,
+        toggleModal, 
         isSubmitting,
-        setData, 
+        errors,
+        resetData,
+        clearErrors,
         setInputValue, 
         setToggleModal, 
-        clearErrors,
         setIsSubmitting,
         validateForm,
+        getDataList,
     } = useMessageStore()
+    
+    useEffect(() => { 
+        resetData() 
+    }, [resetData])
 
     const handleToggleModal = () => {
         setToggleModal(!toggleModal)
     }
-
- 
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         clearErrors();
@@ -57,21 +59,42 @@ export default function MessageAddModal() {
         const validation = validateForm();
         if (!validation.isValid) {
             // Show the first error as toast
-            const firstError =  validation.errors.name || 
-                validation.errors.message || validation.errors.title
+            const firstError =  validation.errors.title || 
+                validation.errors.message
             toast.warn(firstError);
             return;
         }
+        
         setIsSubmitting(true);
         const formData = {
-            name: data.name,
+            title: data.title,
             email: data.email,
-            level: data.title,
             message: data.message,
-            status: data.status,           
-        } 
-        setIsSubmitting(false);
-        console.log('FORM DATA: ', formData)
+            status: 'Sent',
+        }
+        try {
+            const res = await _messageStoreAction(formData);
+            //console.log('_messageStoreAction', res)
+            const {status, message} = res;
+            switch(status){
+                case 1:
+                    clearErrors();
+                    await getDataList();
+                    setIsSubmitting(false);
+                    setToggleModal(false)
+                    toast.success(message);
+                    resetData();
+                    return
+                default:
+                    toast.success('Something went wrong, please try again.');
+                    setIsSubmitting(false);
+                    return
+            } 
+        } catch (error) {
+            toast.error('Failed to save data. Please try again.');
+            console.error('Form submission error:', error);
+            setIsSubmitting(false);
+        }
     }
 
    
@@ -95,17 +118,6 @@ export default function MessageAddModal() {
                                 <HeadingSecondary title={title} css='text-center' />
                                 <SpacerPrimary />
                                 <hr className="w-full border-b border-gray-100" />
-                                <SpacerPrimary />
-                                
-                                <TextInputDefault
-                                    label='Name:' 
-                                    name='name' 
-                                    type="text"
-                                    value={data.name} 
-                                    placeholder='Enter your Name...'
-                                    onChange={setInputValue} 
-                                    error={errors.name}
-                                />
                                 <SpacerPrimary />
 
                                 <TextInputDefault
@@ -140,7 +152,7 @@ export default function MessageAddModal() {
                                 />
                                 <SpacerPrimary />
                                 
-                                <SelectAdminDefault
+                               {/*  <SelectAdminDefault
                                     label='Status' 
                                     name='status' 
                                     data={MessageStatusData}
@@ -148,7 +160,7 @@ export default function MessageAddModal() {
                                     onChange={setInputValue} 
                                     error={errors.status}
                                 />
-                                <SpacerPrimary />  
+                                <SpacerPrimary />   */}
                                 
                                 <div className='flex items-center justify-center'>
                                     <ButtonAdminSubmit 

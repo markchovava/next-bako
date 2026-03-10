@@ -1,4 +1,5 @@
 export const MessageStatusData = [
     'Read',
-    'Unread'
+    'Unread',
+    'Sent',
 ]
